@@ -33,6 +33,11 @@ jobs:
             -workspace SmartTube.xcworkspace \
             -list
 
+      - name: Create GoogleService plist
+        run: |
+          cp SmartTubeApp/SmartTubeApp/GoogleService-Info.plist.example \
+             SmartTubeApp/SmartTubeApp/GoogleService-Info.plist
+             
       - name: Build unsigned iOS app
         run: |
           xcodebuild \
