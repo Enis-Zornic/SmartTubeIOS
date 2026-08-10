@@ -1,0 +1,69 @@
+name: Build SmartTube iOS
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Show Xcode version
+        run: |
+          xcodebuild -version
+          swift --version
+
+      - name: Create config directory
+        run: |
+          mkdir -p SmartTubeApp/Config
+
+      - name: Create CI secrets config
+        run: |
+          cat > SmartTubeApp/Config/Secrets.xcconfig <<'EOF'
+          DEVELOPMENT_TEAM =
+          SMARTTUBE_TV_TEAM =
+          EOF
+
+      - name: Show available schemes
+        run: |
+          xcodebuild \
+            -workspace SmartTube.xcworkspace \
+            -list
+
+      - name: Build unsigned iOS app
+        run: |
+          xcodebuild \
+            -workspace SmartTube.xcworkspace \
+            -scheme SmartTube \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            build
+
+      - name: Find app
+        run: |
+          find build -name "*.app" -type d
+
+      - name: Create IPA
+        run: |
+          APP_PATH=$(find build -path "*Release-iphoneos*.app" -type d | head -1)
+
+          echo "Using app: $APP_PATH"
+
+          mkdir -p Payload
+          cp -R "$APP_PATH" Payload/
+
+          zip -r SmartTube.ipa Payload
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: SmartTube-iOS
+          path: SmartTube.ipa
